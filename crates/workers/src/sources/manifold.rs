@@ -45,7 +45,7 @@ async fn fetch_and_store(pool: &PgPool, client: &Client) -> Result<usize> {
     let mut total = 0;
 
     // Fetch trending markets
-    let url = format!("{}/search-markets?term=&sort=liquidity&limit=100", MANIFOLD_API);
+    let url = format!("{}/search-markets?term=&sort=liquidity&limit=100&filter=open", MANIFOLD_API);
     let response = client.get(&url).send().await?;
 
     if !response.status().is_success() {

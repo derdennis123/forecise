@@ -19,12 +19,35 @@ struct MetaculusResponse {
 struct MetaculusQuestion {
     id: i64,
     title: Option<String>,
-    url: Option<String>,
+    slug: Option<String>,
     status: Option<String>,
-    community_prediction: Option<CommunityPrediction>,
-    number_of_forecasters: Option<i64>,
+    nr_forecasters: Option<i64>,
     #[serde(rename = "type")]
     question_type: Option<String>,
+    community_prediction: Option<CommunityPrediction>,
+    // New API format fields
+    forecasts_count: Option<i64>,
+    question: Option<MetaculusSubQuestion>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MetaculusSubQuestion {
+    aggregations: Option<Aggregations>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Aggregations {
+    recency_weighted: Option<RecencyWeighted>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RecencyWeighted {
+    latest: Option<LatestForecast>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LatestForecast {
+    centers: Option<Vec<f64>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,7 +57,7 @@ struct CommunityPrediction {
 
 #[derive(Debug, Deserialize)]
 struct PredictionFull {
-    q2: Option<f64>, // median
+    q2: Option<f64>,
 }
 
 pub async fn run_worker(pool: PgPool, client: Client) -> Result<()> {
@@ -99,17 +122,28 @@ async fn process_question(pool: &PgPool, question: &MetaculusQuestion) -> Result
         .as_ref()
         .and_then(|cp| cp.full.as_ref())
         .and_then(|f| f.q2)
+        .or_else(|| {
+            question.question.as_ref()
+                .and_then(|q| q.aggregations.as_ref())
+                .and_then(|a| a.recency_weighted.as_ref())
+                .and_then(|r| r.latest.as_ref())
+                .and_then(|l| l.centers.as_ref())
+                .and_then(|c| c.first().copied())
+        })
         .unwrap_or(0.5);
 
     let external_id = question.id.to_string();
-    let external_url = question.url.as_deref()
-        .or(Some(&format!("https://www.metaculus.com/questions/{}/", question.id)))
-        .map(String::from);
+    let external_url = question.slug.as_ref()
+        .map(|s| format!("https://www.metaculus.com/questions/{}/", s))
+        .or_else(|| Some(format!("https://www.metaculus.com/questions/{}/", question.id)));
+
+    let forecasters = question.nr_forecasters
+        .or(question.forecasts_count);
 
     let metadata = serde_json::json!({
         "status": question.status,
         "question_type": question.question_type,
-        "forecasters": question.number_of_forecasters,
+        "forecasters": forecasters,
     });
 
     let source_market_id = ingestion::upsert_source_market(

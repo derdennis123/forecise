@@ -17,8 +17,10 @@ struct GammaMarket {
     question: Option<String>,
     #[serde(rename = "outcomePrices")]
     outcome_prices: Option<String>,
-    volume: Option<f64>,
-    liquidity: Option<f64>,
+    #[serde(rename = "volumeNum")]
+    volume_num: Option<f64>,
+    #[serde(rename = "liquidityNum")]
+    liquidity_num: Option<f64>,
     slug: Option<String>,
     active: Option<bool>,
     closed: Option<bool>,
@@ -114,7 +116,7 @@ async fn process_market(pool: &PgPool, market: &GammaMarket) -> Result<()> {
     let metadata = serde_json::json!({
         "active": market.active,
         "closed": market.closed,
-        "liquidity": market.liquidity,
+        "liquidity": market.liquidity_num,
     });
 
     let source_market_id = ingestion::upsert_source_market(
@@ -123,7 +125,7 @@ async fn process_market(pool: &PgPool, market: &GammaMarket) -> Result<()> {
         external_id,
         question,
         probability,
-        market.volume,
+        market.volume_num,
         external_url.as_deref(),
         metadata,
     ).await?;

@@ -6,6 +6,7 @@ mod sources;
 mod ingestion;
 mod movement;
 mod consensus_worker;
+mod briefing;
 
 use sources::{polymarket, metaculus, manifold};
 
@@ -36,6 +37,7 @@ async fn main() -> Result<()> {
     let pool3 = pool.clone();
     let pool4 = pool.clone();
     let pool5 = pool.clone();
+    let pool6 = pool.clone();
     let client1 = http_client.clone();
     let client2 = http_client.clone();
     let client3 = http_client.clone();
@@ -57,6 +59,9 @@ async fn main() -> Result<()> {
         }
         r = consensus_worker::run_consensus_worker(pool5) => {
             tracing::error!("Consensus worker exited: {:?}", r);
+        }
+        r = briefing::run_briefing_generator(pool6) => {
+            tracing::error!("Briefing generator exited: {:?}", r);
         }
     }
 

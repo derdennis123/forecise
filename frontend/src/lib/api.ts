@@ -120,3 +120,7 @@ export async function getLeaderboard(category?: string): Promise<ApiResponse<Acc
 export async function getConsensus(marketId: string): Promise<ApiResponse<ConsensusInfo>> {
   return fetchApi<ConsensusInfo>(`/consensus/${marketId}`);
 }
+
+export async function getLatestBriefing(): Promise<ApiResponse<unknown>> {
+  return fetchApi<unknown>(`/briefing/latest`);
+}

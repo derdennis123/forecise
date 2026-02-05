@@ -225,6 +225,22 @@ INSERT INTO categories (slug, name, description, icon) VALUES
     ('entertainment', 'Entertainment', 'Awards, media, culture', '🎬'),
     ('science', 'Science & Health', 'Research, health, pandemics', '🔬');
 
+-- Morning Briefings
+CREATE TABLE morning_briefings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    briefing_date DATE UNIQUE NOT NULL,
+    total_markets_tracked INTEGER NOT NULL DEFAULT 0,
+    new_markets_24h INTEGER NOT NULL DEFAULT 0,
+    top_movers JSONB NOT NULL DEFAULT '[]',
+    high_volume_markets JSONB NOT NULL DEFAULT '[]',
+    source_agreement JSONB NOT NULL DEFAULT '[]',
+    key_stats JSONB NOT NULL DEFAULT '{}',
+    summary TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_morning_briefings_date ON morning_briefings(briefing_date DESC);
+
 -- Create useful indexes
 CREATE INDEX idx_source_markets_market ON source_markets(market_id);
 CREATE INDEX idx_source_markets_source ON source_markets(source_id);
