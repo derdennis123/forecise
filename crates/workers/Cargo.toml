@@ -21,3 +21,4 @@ dotenvy = { workspace = true }
 url = { workspace = true }
 futures = { workspace = true }
 bigdecimal = { workspace = true }
+forecise-consensus = { path = "../consensus" }

@@ -44,6 +44,7 @@ function Navigation() {
               <a href="/" className="text-sm font-medium text-gray-600 hover:text-navy transition-colors">Dashboard</a>
               <a href="/markets" className="text-sm font-medium text-gray-600 hover:text-navy transition-colors">Markets</a>
               <a href="/leaderboard" className="text-sm font-medium text-gray-600 hover:text-navy transition-colors">Accuracy</a>
+              <a href="/ask" className="text-sm font-medium text-gray-600 hover:text-navy transition-colors">Ask Forecise</a>
             </div>
           </div>
           <div className="flex items-center gap-4">

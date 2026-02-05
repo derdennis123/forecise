@@ -1,66 +1,45 @@
 import MarketCard from "@/components/MarketCard";
 import { Market } from "@/lib/api";
 
-// This would use getMarkets() in production
-const demoMarkets: Market[] = [
-  {
-    id: "1",
-    slug: "trump-eu-tariffs-2026",
-    title: "Will Trump impose 25%+ tariffs on EU goods before July 2026?",
-    category_name: "Politics",
-    category_slug: "politics",
-    status: "active",
-    consensus_probability: 0.71,
-    source_count: 4,
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    slug: "ecb-rate-cut-march-2026",
-    title: "Will the ECB cut interest rates in March 2026?",
-    category_name: "Economics",
-    category_slug: "economics",
-    status: "active",
-    consensus_probability: 0.684,
-    source_count: 3,
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    slug: "bitcoin-100k-june-2026",
-    title: "Will Bitcoin exceed $100,000 by June 2026?",
-    category_name: "Crypto",
-    category_slug: "crypto",
-    status: "active",
-    consensus_probability: 0.38,
-    source_count: 5,
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    slug: "us-recession-2026",
-    title: "Will the US enter a recession in 2026?",
-    category_name: "Economics",
-    category_slug: "economics",
-    status: "active",
-    consensus_probability: 0.23,
-    source_count: 4,
-    updated_at: new Date().toISOString(),
-  },
-];
+export default async function MarketsPage() {
+  let markets: Market[] = [];
 
-export default function MarketsPage() {
+  try {
+    const res = await fetch("http://localhost:3001/api/markets?per_page=50", {
+      next: { revalidate: 30 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      markets = data.data ?? [];
+    }
+  } catch {
+    // API not available
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-navy">Markets</h1>
-          <p className="text-gray-500 mt-1">Browse all tracked prediction markets.</p>
+          <p className="text-gray-500 mt-1">
+            {markets.length > 0
+              ? `${markets.length} tracked prediction markets.`
+              : "No markets loaded yet. Start the API server and workers."}
+          </p>
         </div>
       </div>
 
+      {markets.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+          <p className="text-amber-800 font-medium">No market data yet</p>
+          <p className="text-amber-600 text-sm mt-1">
+            Start the backend with <code className="bg-amber-100 px-1 rounded">cargo run --bin forecise-workers</code> to begin ingesting data.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {demoMarkets.map((market) => (
+        {markets.map((market) => (
           <MarketCard key={market.id} market={market} />
         ))}
       </div>

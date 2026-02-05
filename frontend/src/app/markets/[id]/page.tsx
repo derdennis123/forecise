@@ -1,115 +1,131 @@
 import ConsensusCard from "@/components/ConsensusCard";
+import OddsChart from "@/components/OddsChart";
 import { SourceMarketSummary, ConsensusInfo } from "@/lib/api";
 
-// Demo data - would use getMarket(id) in production
-const demoSources: SourceMarketSummary[] = [
-  { source_name: "Polymarket", source_slug: "polymarket", probability: 0.67, volume: 5200000, accuracy_pct: 89.2, external_url: "https://polymarket.com" },
-  { source_name: "Kalshi", source_slug: "kalshi", probability: 0.61, volume: 1800000, accuracy_pct: 81.3, external_url: "https://kalshi.com" },
-  { source_name: "Metaculus", source_slug: "metaculus", probability: 0.72, volume: null, accuracy_pct: 84.7, external_url: "https://metaculus.com" },
-];
+interface MarketDetailData {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  status: string;
+  category?: { name: string; slug: string } | null;
+  sources: SourceMarketSummary[];
+  consensus: ConsensusInfo | null;
+}
 
-const demoConsensus: ConsensusInfo = {
-  probability: 0.684,
-  confidence: 0.78,
-  source_count: 3,
-  agreement: 0.85,
-};
+async function getMarketDetail(id: string): Promise<MarketDetailData | null> {
+  try {
+    const res = await fetch(`http://localhost:3001/api/markets/${id}`, {
+      next: { revalidate: 30 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.data;
+    }
+  } catch {}
+  return null;
+}
 
-export default function MarketDetailPage() {
+export default async function MarketDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const market = await getMarketDetail(id);
+
+  if (!market) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+          <p className="text-amber-800 font-medium">Market not found</p>
+          <p className="text-amber-600 text-sm mt-1">
+            This market may not exist or the API server is not running.
+          </p>
+          <a href="/markets" className="text-brand hover:underline text-sm mt-2 inline-block">
+            Back to Markets
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">Economics</span>
-          <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-up rounded-full">Active</span>
+          {market.category && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+              {market.category.name}
+            </span>
+          )}
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+            market.status === "active" ? "bg-green-100 text-up" : "bg-gray-100 text-gray-600"
+          }`}>
+            {market.status.charAt(0).toUpperCase() + market.status.slice(1)}
+          </span>
         </div>
-        <h1 className="text-2xl font-bold text-navy">
-          Will the ECB cut interest rates in March 2026?
-        </h1>
+        <h1 className="text-2xl font-bold text-navy">{market.title}</h1>
+        {market.description && (
+          <p className="text-gray-500 mt-2">{market.description}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Chart placeholder */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-navy">Price History</h2>
-              <div className="flex gap-1">
-                {["1D", "1W", "1M", "3M", "1Y", "ALL"].map((tf) => (
-                  <button
-                    key={tf}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                      tf === "1M"
-                        ? "bg-navy text-white"
-                        : "text-gray-500 hover:bg-gray-100"
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-sm">
-              Chart will render here with TradingView Lightweight Charts
-            </div>
-          </div>
+          <OddsChart marketId={id} />
 
-          {/* Source comparison */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-lg font-semibold text-navy mb-4">Source Comparison</h2>
-            <div className="space-y-4">
-              {demoSources.map((source) => (
-                <div key={source.source_slug} className="flex items-center gap-4">
-                  <div className="w-28 text-sm font-medium text-navy">{source.source_name}</div>
-                  <div className="flex-1">
-                    <div className="h-8 bg-gray-100 rounded-full overflow-hidden relative">
-                      <div
-                        className="h-full bg-brand/20 rounded-full transition-all duration-500"
-                        style={{ width: `${(Number(source.probability) || 0) * 100}%` }}
-                      />
-                      <span className="absolute inset-0 flex items-center justify-center text-xs font-mono font-semibold">
-                        {source.probability !== null ? `${(Number(source.probability) * 100).toFixed(1)}%` : "\u2014"}
-                      </span>
+            {market.sources.length === 0 ? (
+              <p className="text-gray-400 text-sm">No source data available.</p>
+            ) : (
+              <div className="space-y-4">
+                {market.sources.map((source) => (
+                  <div key={source.source_slug} className="flex items-center gap-4">
+                    <div className="w-28 text-sm font-medium text-navy">{source.source_name}</div>
+                    <div className="flex-1">
+                      <div className="h-8 bg-gray-100 rounded-full overflow-hidden relative">
+                        <div
+                          className="h-full bg-brand/20 rounded-full transition-all duration-500"
+                          style={{ width: `${(Number(source.probability) || 0) * 100}%` }}
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-mono font-semibold">
+                          {source.probability !== null ? `${(Number(source.probability) * 100).toFixed(1)}%` : "\u2014"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-20 text-right">
+                      {source.accuracy_pct && (
+                        <span className="text-xs text-gray-400">
+                          {Number(source.accuracy_pct).toFixed(0)}% acc.
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="w-20 text-right">
-                    {source.accuracy_pct && (
-                      <span className="text-xs text-gray-400">
-                        {Number(source.accuracy_pct).toFixed(0)}% acc.
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          <ConsensusCard consensus={demoConsensus} sources={demoSources} />
+          <ConsensusCard consensus={market.consensus} sources={market.sources} />
 
-          {/* Market Info */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-lg font-semibold text-navy mb-4">Market Info</h2>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-gray-400">Status</dt>
-                <dd className="font-medium text-navy">Active</dd>
+                <dd className="font-medium text-navy">{market.status}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-400">Sources</dt>
-                <dd className="font-medium text-navy">3</dd>
+                <dd className="font-medium text-navy">{market.sources.length}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-400">Total Volume</dt>
-                <dd className="font-mono font-medium text-navy">$7.0M</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-400">Created</dt>
-                <dd className="font-medium text-navy">Jan 15, 2026</dd>
+                <dt className="text-gray-400">Market ID</dt>
+                <dd className="font-mono text-xs text-gray-500">{market.id.slice(0, 8)}...</dd>
               </div>
             </dl>
           </div>

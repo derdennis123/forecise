@@ -1,5 +1,10 @@
 -- Enable extensions
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+-- TimescaleDB is optional - use if available
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS timescaledb;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'TimescaleDB not available, using regular tables';
+END $$;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Sources (Polymarket, Kalshi, Metaculus, etc.)
@@ -67,8 +72,12 @@ CREATE TABLE odds_history (
     trade_count INTEGER
 );
 
--- Convert to TimescaleDB hypertable for efficient time-series queries
-SELECT create_hypertable('odds_history', 'time');
+-- Convert to TimescaleDB hypertable if available
+DO $$ BEGIN
+  PERFORM create_hypertable('odds_history', 'time');
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'TimescaleDB not available, using regular table for odds_history';
+END $$;
 
 -- Create index for efficient lookups
 CREATE INDEX idx_odds_history_source_market ON odds_history (source_market_id, time DESC);
@@ -115,7 +124,11 @@ CREATE TABLE consensus_snapshots (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-SELECT create_hypertable('consensus_snapshots', 'time');
+DO $$ BEGIN
+  PERFORM create_hypertable('consensus_snapshots', 'time');
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'TimescaleDB not available, using regular table for consensus_snapshots';
+END $$;
 
 -- Movement events (for "Why It Moved")
 CREATE TABLE movement_events (

@@ -1,7 +1,7 @@
 import MarketCard from "@/components/MarketCard";
-import { Market } from "@/lib/api";
+import { Market, getMarkets } from "@/lib/api";
 
-// Static demo data for initial UI (before backend is connected)
+// Fallback demo data in case API is not available
 const demoMarkets: Market[] = [
   {
     id: "1",
@@ -80,13 +80,27 @@ const categories = [
   { slug: "climate", name: "Climate", icon: "\ud83c\udf0d" },
 ];
 
-export default function DashboardPage() {
-  // In production, this would use getMarkets() from the API
-  const markets = demoMarkets;
+export default async function DashboardPage() {
+  let markets: Market[] = demoMarkets;
+  let totalMarkets = demoMarkets.length;
+
+  try {
+    const res = await fetch("http://localhost:3001/api/markets?per_page=20", {
+      next: { revalidate: 30 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.data && data.data.length > 0) {
+        markets = data.data;
+        totalMarkets = data.meta?.total ?? data.data.length;
+      }
+    }
+  } catch {
+    // API not available, use demo data
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-navy">Dashboard</h1>
         <p className="text-gray-500 mt-1">
@@ -94,15 +108,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Markets Tracked" value="1,247" />
+        <StatCard label="Markets Tracked" value={totalMarkets.toLocaleString()} />
         <StatCard label="Sources" value="5" />
-        <StatCard label="Resolved Questions" value="3,891" />
-        <StatCard label="Avg Consensus Accuracy" value="84.2%" highlight />
+        <StatCard label="Resolved Questions" value="—" />
+        <StatCard label="Avg Consensus Accuracy" value="—" />
       </div>
 
-      {/* Category Filter */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
         {categories.map((cat) => (
           <button
@@ -119,17 +131,17 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Trending / Hot Markets */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-navy mb-4">Trending Markets</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {markets.slice(0, 3).map((market) => (
-            <MarketCard key={market.id} market={market} />
-          ))}
+      {markets.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-navy mb-4">Trending Markets</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {markets.slice(0, 3).map((market) => (
+              <MarketCard key={market.id} market={market} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* All Markets */}
       <div>
         <h2 className="text-lg font-semibold text-navy mb-4">All Markets</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
