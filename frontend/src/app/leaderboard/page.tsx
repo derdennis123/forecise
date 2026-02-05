@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { AccuracyEntry } from "@/lib/api";
 
@@ -7,20 +10,35 @@ const categories = [
   { slug: "economics", name: "Economics" },
   { slug: "technology", name: "Technology" },
   { slug: "crypto", name: "Crypto" },
+  { slug: "climate", name: "Climate" },
+  { slug: "sports", name: "Sports" },
+  { slug: "science", name: "Science" },
 ];
 
-export default async function LeaderboardPage() {
-  let entries: AccuracyEntry[] = [];
+export default function LeaderboardPage() {
+  const [entries, setEntries] = useState<AccuracyEntry[]>([]);
+  const [category, setCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const res = await fetch("http://localhost:3001/api/accuracy/leaderboard", {
-      next: { revalidate: 60 },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      entries = data.data ?? [];
+  const fetchLeaderboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const qs = category !== "all" ? `?category=${category}` : "";
+      const res = await fetch(`/api/accuracy/leaderboard${qs}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEntries(data.data ?? []);
+      }
+    } catch {
+      // API not available
+    } finally {
+      setLoading(false);
     }
-  } catch {}
+  }, [category]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -31,12 +49,13 @@ export default async function LeaderboardPage() {
         </p>
       </div>
 
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
         {categories.map((cat) => (
           <button
             key={cat.slug}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              cat.slug === "all"
+            onClick={() => setCategory(cat.slug)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              cat.slug === category
                 ? "bg-navy text-white"
                 : "bg-white text-gray-600 border border-gray-200 hover:border-brand hover:text-brand"
             }`}
@@ -52,7 +71,13 @@ export default async function LeaderboardPage() {
         </p>
       </div>
 
-      <LeaderboardTable entries={entries} />
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+        </div>
+      ) : (
+        <LeaderboardTable entries={entries} />
+      )}
     </div>
   );
 }

@@ -48,18 +48,52 @@ function Navigation() {
               <a href="/briefing" className="text-sm font-medium text-gray-600 hover:text-navy transition-colors">Briefing</a>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search markets..."
-                className="w-64 pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-              />
-              <svg className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <div className="flex items-center gap-3">
+            {/* Global search - navigates to /markets?search=... */}
+            <form action="/markets" method="get" className="hidden sm:block">
+              <div className="relative">
+                <input
+                  type="text"
+                  name="search"
+                  placeholder="Search markets..."
+                  className="w-64 pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                />
+                <svg className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </form>
+
+            {/* Mobile hamburger button */}
+            <label
+              htmlFor="mobile-menu-toggle"
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-navy hover:bg-gray-100 cursor-pointer transition-colors"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
-            </div>
+            </label>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile menu (CSS checkbox hack - no JS needed in server component) */}
+      <input type="checkbox" id="mobile-menu-toggle" className="hidden peer" />
+      <div className="hidden peer-checked:block md:hidden border-t border-gray-100">
+        <div className="px-4 py-3 space-y-1">
+          <a href="/" className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-navy">Dashboard</a>
+          <a href="/markets" className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-navy">Markets</a>
+          <a href="/leaderboard" className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-navy">Accuracy</a>
+          <a href="/ask" className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-navy">Ask Forecise</a>
+          <a href="/briefing" className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-navy">Briefing</a>
+          <form action="/markets" method="get" className="px-3 pt-2">
+            <input
+              type="text"
+              name="search"
+              placeholder="Search markets..."
+              className="w-full pl-3 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
+          </form>
         </div>
       </div>
     </nav>

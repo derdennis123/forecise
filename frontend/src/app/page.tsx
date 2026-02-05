@@ -1,5 +1,5 @@
 import MarketCard from "@/components/MarketCard";
-import { Market, getMarkets } from "@/lib/api";
+import { Market } from "@/lib/api";
 
 // Fallback demo data in case API is not available
 const demoMarkets: Market[] = [
@@ -117,8 +117,9 @@ export default async function DashboardPage() {
 
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
         {categories.map((cat) => (
-          <button
+          <a
             key={cat.slug}
+            href={cat.slug === "all" ? "/markets" : `/markets?category=${cat.slug}`}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               cat.slug === "all"
                 ? "bg-navy text-white"
@@ -127,7 +128,7 @@ export default async function DashboardPage() {
           >
             <span className="mr-1.5">{cat.icon}</span>
             {cat.name}
-          </button>
+          </a>
         ))}
       </div>
 
