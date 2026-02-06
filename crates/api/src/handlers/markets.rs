@@ -36,6 +36,19 @@ async fn list_markets(
     let per_page = params.per_page.unwrap_or(20).min(100);
     let offset = (page - 1) * per_page;
 
+    // Try Redis cache
+    let cache_key = format!(
+        "markets:list:{}:{}:{}:{}:{}",
+        page,
+        per_page,
+        params.category.as_deref().unwrap_or(""),
+        params.status.as_deref().unwrap_or(""),
+        params.search.as_deref().unwrap_or("")
+    );
+    if let Some(cached) = crate::cache::get::<serde_json::Value>(&state.redis, &cache_key).await {
+        return Json(cached).into_response();
+    }
+
     let markets = sqlx::query_as::<_, MarketListItem>(
         r#"
         SELECT
@@ -83,7 +96,9 @@ async fn list_markets(
             .await
             .unwrap_or(0);
 
-            Json(ApiResponse::with_pagination(data, page, per_page, total)).into_response()
+            let response = ApiResponse::with_pagination(data, page, per_page, total);
+            crate::cache::set(&state.redis, &cache_key, &response, 30).await;
+            Json(response).into_response()
         }
         Err(e) => {
             tracing::error!("Failed to list markets: {}", e);

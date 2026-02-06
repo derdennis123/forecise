@@ -6,7 +6,7 @@ use bigdecimal::BigDecimal;
 use chrono::Utc;
 use sqlx::PgPool;
 use std::str::FromStr;
-use tracing::{info, warn};
+use tracing::info;
 use uuid::Uuid;
 
 /// Minimum probability change to trigger a movement event (15% = 0.15)

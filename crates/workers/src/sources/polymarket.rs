@@ -6,7 +6,6 @@ use tracing::{info, warn, error};
 
 use crate::ingestion;
 
-const POLYMARKET_API: &str = "https://clob.polymarket.com";
 const GAMMA_API: &str = "https://gamma-api.polymarket.com";
 const POLL_INTERVAL_SECS: u64 = 300; // 5 minutes
 

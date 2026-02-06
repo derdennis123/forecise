@@ -26,6 +26,16 @@ async fn leaderboard(
 ) -> impl IntoResponse {
     let limit = params.limit.unwrap_or(20).min(100);
 
+    // Try Redis cache
+    let cache_key = format!(
+        "accuracy:leaderboard:{}:{}",
+        params.category.as_deref().unwrap_or(""),
+        limit
+    );
+    if let Some(cached) = crate::cache::get::<serde_json::Value>(&state.redis, &cache_key).await {
+        return Json(cached).into_response();
+    }
+
     let entries = sqlx::query_as::<_, AccuracyLeaderboardEntry>(
         r#"
         SELECT
@@ -49,7 +59,11 @@ async fn leaderboard(
     .await;
 
     match entries {
-        Ok(data) => Json(ApiResponse::new(data)).into_response(),
+        Ok(data) => {
+            let response = ApiResponse::new(data);
+            crate::cache::set(&state.redis, &cache_key, &response, 60).await;
+            Json(response).into_response()
+        }
         Err(e) => {
             tracing::error!("Failed to get leaderboard: {}", e);
             (
